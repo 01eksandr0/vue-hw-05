@@ -1,11 +1,20 @@
 <template>
   <div>
-    <h2>movies page</h2>
+    <search-bar @update="(newQuery) => (query = newQuery)" />
+    <ul class="list" v-if="list.length">
+      <li v-for="item in list" :key="item.id">
+        <my-movie :item="item"></my-movie>
+      </li>
+    </ul>
   </div>
 </template>
 
 <script>
+import requests from "../js/api";
+import MyMovie from "../components/MyMovie.vue";
+import SearchBar from "../components/SearchBar.vue";
 export default {
+  components: { MyMovie, SearchBar },
   data() {
     return {
       query: "",
@@ -14,14 +23,16 @@ export default {
   },
   methods: {
     async getList() {
-      const movieName = this.$route.query;
-      console.log(movieName);
+      const movieName = this.query || (await this.$route.query.query) || null;
+      if (movieName === null) return;
       try {
         const {
           data: { results },
         } = await requests.getMoviesByWord(movieName);
-        this.list = results;
-      } catch (error) {}
+        this.list = [...results];
+      } catch (error) {
+        console.log(error);
+      }
     },
     changeQuery() {
       if (!this.query) return;
@@ -30,14 +41,22 @@ export default {
       this.$router.push({ path: this.$route.path, query: currentQuery });
     },
   },
-  mounted() {},
+  mounted() {
+    this.getList();
+  },
   watch: {
     query() {
       this.changeQuery();
+      this.getList();
     },
   },
 };
 </script>
 
-<style lang="scss" scoped></style>
-import { log } from 'console';
+<style lang="css" scoped>
+.list {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+</style>
